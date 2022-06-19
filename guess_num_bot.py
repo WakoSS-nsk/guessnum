@@ -1,16 +1,22 @@
 import os
+import random
+import math
 
-import guess_game
 import requests
 from dotenv import load_dotenv
 from telegram import ReplyKeyboardMarkup
-from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+from telegram.ext import (CommandHandler, Filters,
+                          MessageHandler, Updater)
 
 load_dotenv()
 
 TG_TOKEN = os.getenv('TOKEN')
-NASA_KEY = os.getenv('NASA_TOKEN')
-URL = f'https://api.nasa.gov/planetary/apod?api_key={NASA_KEY}&count=1'
+URL = 'http://numbersapi.com/'
+LOWER = 0
+UPPER = 10
+LEVEL = LOWER
+X_NUM = random.randint(LOWER, UPPER)
+GUESS_QUANTITY = round(math.log(UPPER - LOWER + 1, 2))
 
 
 def get_new_image():
@@ -27,38 +33,84 @@ def get_url():
     return list_objects
 
 
-def get_description():
-    response = get_url()
-    return response[1]
-
-
 def new_pic(update, context):
     chat = update.effective_chat
     context.bot.send_photo(chat.id, get_new_image())
-    context.bot.send_message(chat.id, get_description())
 
 
-def wake_up(update, context):
+def greeting(update, context):
     chat = update.effective_chat
     name = update.message.chat.first_name
-    button = ReplyKeyboardMarkup([['/space_photo']], resize_keyboard=True)
-    get_url()
-
+    button = ReplyKeyboardMarkup([['/proceed!']], resize_keyboard=True)
     context.bot.send_message(
         chat_id=chat.id,
-        text='Привет, {}. Насладись бесконечным космосом'.format(name),
+        text='Привет, {}. Готов сыграть со мной в игру?'.format(name),
         reply_markup=button
     )
 
-    context.bot.send_photo(chat.id, get_new_image())
-    context.bot.send_message(chat.id, get_description())
+    context.bot.send_photo(chat.id, photo=open('pics/saw.png', 'rb'))
+
+
+def input_num(update, context):
+    chat = update.effective_chat
+    try:
+        guess = update.message['text']
+        num_fact = ''.join([URL, guess, '?json'])
+        #num_fact = 'http://numbersapi.com/5?json'
+        guess = int(guess[0])
+        if guess >= LOWER or guess <= UPPER:
+            context.bot.send_message(
+                chat_id=chat.id,
+                text='Oh, nice. Here is an interesting fact about this number:'
+            )
+            response = requests.get(num_fact).json()
+            print(response)
+            context.bot.send_message(
+                chat_id=chat.id, text=response['text'])
+            return guess
+        raise InputError(
+            f'Дружок, введи число от {LOWER} до {UPPER}'
+        )
+    except ValueError:
+        raise ValueError('Дружок, введи целое положительное число: ')
+    return guess
+
+
+def start(update, context):
+    chat = update.effective_chat
+    context.bot.send_message(
+        chat_id=chat.id, text=f'Угадай число от {LOWER} до {UPPER}:- '
+                              f'Количество попыток: {GUESS_QUANTITY}. Удачи!'
+    )
+    return context
+
+
+def start_game(update, context):
+    chat = update.effective_chat
+    tries_count = 0
+    while tries_count < GUESS_QUANTITY:
+        tries_count += 1
+        user_num = input_num()
+        if X_NUM == user_num:
+            print(f'Молодец! C {tries_count} попыток')
+            break
+        elif X_NUM > user_num:
+            print('Не угадал! Моё число больше.')
+        elif X_NUM < user_num:
+            print('Не угадал! Моё число меньше.')
+    if tries_count >= GUESS_QUANTITY:
+        print(f'Я загадал {X_NUM}')
+        print('Повезет в другой раз!')
 
 
 def main():
     updater = Updater(token=TG_TOKEN)
-    updater.dispatcher.add_handler(CommandHandler('start', wake_up))
-    updater.dispatcher.add_handler(MessageHandler(Filters.text, new_pic))
+    updater.dispatcher.add_handler(CommandHandler('start', greeting))
+    updater.dispatcher.add_handler(CommandHandler('proceed', start))
     updater.start_polling()
+    updater.dispatcher.add_handler(MessageHandler(Filters.text, input_num))
+    updater.start_polling()
+    updater.dispatcher.add_handler(MessageHandler(Filters.text, input_num))
     updater.idle()
 
 
