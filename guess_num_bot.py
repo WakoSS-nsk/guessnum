@@ -12,6 +12,7 @@ load_dotenv()
 
 TG_TOKEN = os.getenv('TOKEN')
 URL = 'http://numbersapi.com/'
+SECOND_URL = 'https://api.math.tools/numbers/base?number='
 LOWER = 0
 UPPER = 10
 LEVEL = LOWER
@@ -56,15 +57,23 @@ def input_num(update, context):
     try:
         guess = update.message['text']
         num_fact = ''.join([URL, guess, '?json'])
-        #num_fact = 'http://numbersapi.com/5?json'
         guess = int(guess[0])
         if guess >= LOWER or guess <= UPPER:
             context.bot.send_message(
                 chat_id=chat.id,
-                text='Oh, nice. Here is an interesting fact about this number:'
+                text='Oh, nice. Here is an interesting fact about numbers:'
             )
-            response = requests.get(num_fact).json()
-            print(response)
+            try:
+                response = requests.get(num_fact).json()
+            except ConnectionError:
+                raise ConnectionError('API недоступен')
+                param = '8&from=10&to=2'
+                new_url = ''.join([SECOND_URL, guess, param])
+                response = requests.get(new_url).json()
+                text_1 = new_url['contents']['answer']
+                context.bot.send_message(
+                    chat_id=chat.id,
+                    text=(f'Here is the converted number to base 2 -{text}'))
             context.bot.send_message(
                 chat_id=chat.id, text=response['text'])
             return guess
