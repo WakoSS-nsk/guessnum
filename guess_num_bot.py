@@ -1,6 +1,6 @@
 import os
 import random
-import math
+
 
 import requests
 from dotenv import load_dotenv
@@ -10,24 +10,29 @@ from telegram.ext import (CommandHandler, Filters,
 
 load_dotenv()
 
+START = ReplyKeyboardMarkup([['/start']], resize_keyboard=True)
+PROCEED = ReplyKeyboardMarkup([['/proceed']], resize_keyboard=True)
 TG_TOKEN = os.getenv('TOKEN')
 URL = 'http://numbersapi.com/'
 SECOND_URL = 'https://api.math.tools/numbers/base?number='
-LOWER = 0
-UPPER = 10
-LEVEL = LOWER
-X_NUM = random.randint(LOWER, UPPER)
-GUESS_QUANTITY = round(math.log(UPPER - LOWER + 1, 2))
-PLAYER_NUM = 0
+
+
+class StatInfo:
+    lower = 0
+    upper = 3
+    x_num = random.randint(lower, upper)
+    player_num = 0
+    game_level = 0
 
 
 def greeting(update, context):
     chat = update.effective_chat
     name = update.message.chat.first_name
-    button = ReplyKeyboardMarkup([['/proceed!']], resize_keyboard=True)
+    button = PROCEED
     context.bot.send_message(
         chat_id=chat.id,
-        text='Привет, {}. Готов сыграть со мной в игру?'.format(name),
+        text=(f'Hi, {name}.\n'
+              f'Your level is {StatInfo.game_level}.\n Ready to play a game?'),
         reply_markup=button
     )
 
@@ -36,13 +41,13 @@ def greeting(update, context):
 
 def input_num(update, context):
     chat = update.effective_chat
-    button = ReplyKeyboardMarkup([['/next_step']], resize_keyboard=True)
+    button = ReplyKeyboardMarkup([['/check']], resize_keyboard=True)
     try:
         guess = update.message['text']
         num_fact = ''.join([URL, guess, '?json'])
         guess = int(guess[0])
-        PLAYER_NUM = guess
-        if guess >= LOWER or guess <= UPPER:
+        StatInfo.player_num = guess
+        if guess >= StatInfo.lower or guess <= StatInfo.upper:
             context.bot.send_message(
                 chat_id=chat.id,
                 text='Oh, nice. Here is an interesting fact about numbers:'
@@ -66,9 +71,10 @@ def input_num(update, context):
                 text=response['text'],
                 reply_markup=button
             )
-            return PLAYER_NUM
+            return StatInfo.player_num
         else:
-            raise InputError('Дружок, введи число от {LOWER} до {UPPER}')
+            raise InputError(
+                f'Дружок, введи число от {StatInfo.lower} до {StatInfo.upper}')
     except ValueError:
         raise ValueError('Дружок, введи целое положительное число: ')
 
@@ -77,39 +83,47 @@ def start(update, context):
     chat = update.effective_chat
     context.bot.send_message(
         chat_id=chat.id,
-        text=(f'Количество попыток: {GUESS_QUANTITY}. Удачи!'
-              f'Введи число от {LOWER} до {UPPER}:- ')
+        text=("You've got only one try.\n Good luck!\n"
+              f'Enter the num between {StatInfo.lower} and {StatInfo.upper}:- ')
     )
     return context
 
 
 def start_game(update, context):
     chat = update.effective_chat
-    tries_count = 0
-    while tries_count < GUESS_QUANTITY:
-        tries_count += 1
-        user_num = PLAYER_NUM
-        if X_NUM == user_num:
-            context.bot.send_message(
-                chat_id=chat.id,
-                text=f'Молодец! C {tries_count} попыток')
-            break
-        elif X_NUM > user_num:
-            context.bot.send_message(
-                chat_id=chat.id,
-                text='Не угадал! Моё число больше.')
-        elif X_NUM < user_num:
-            context.bot.send_message(
-                chat_id=chat.id,
-                text='Не угадал! Моё число меньше.')
-    if tries_count >= GUESS_QUANTITY:
+    user_num = StatInfo.player_num
+    if StatInfo.x_num == user_num:
+        StatInfo.game_level += 1
+        StatInfo.lower += 1
+        StatInfo.upper += 2
+        button = START
         context.bot.send_message(
             chat_id=chat.id,
-            text=f'Я загадал {X_NUM}\n. Повезет в другой раз!')
+            text=(f'Well done! Your level is increased! Are you a psychic?\n'
+                  'One more time?'),
+            reply_markup=button
+        )
+
+    elif StatInfo.x_num > user_num:
+        button = PROCEED
+        context.bot.send_message(
+            chat_id=chat.id,
+            text=('Wrong! My num is greater.\n'
+                  f'My number is  {StatInfo.x_num}.\n One more time?'),
+            reply_markup=button
+        )
+    elif StatInfo.x_num < user_num:
+        button = PROCEED
+        context.bot.send_message(
+            chat_id=chat.id,
+            text=('Wrong! My num is less\n'
+                  f'My number is  {StatInfo.x_num}.\n One more time?'),
+            reply_markup=button
+        )
 
 
 def main():
-    buttons = ['check', '/next_step']
+    buttons = ['/check']
     markup = ReplyKeyboardMarkup.from_column(buttons)
     updater = Updater(token=TG_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', greeting))
@@ -119,7 +133,7 @@ def main():
         MessageHandler(Filters.text & (~ Filters.command), input_num))
     updater.start_polling()
     updater.dispatcher.add_handler(
-        MessageHandler(Filters.text(buttons[1]), start_game))
+        MessageHandler(Filters.text(buttons[0]), start_game))
     updater.idle()
 
 
