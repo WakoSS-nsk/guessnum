@@ -47,7 +47,8 @@ def input_num(update, context):
         num_fact = ''.join([URL, guess, '?json'])
         guess = int(guess[0])
         StatInfo.player_num = guess
-        if StatInfo.player_num >= StatInfo.lower and StatInfo.player_num <= StatInfo.upper:
+        if (StatInfo.player_num >= StatInfo.lower) and (
+                StatInfo.player_num <= StatInfo.upper):
             context.bot.send_message(
                 chat_id=chat.id,
                 text='Oh, nice. Here is an interesting fact about numbers:'
@@ -130,7 +131,6 @@ def start_game(update, context):
 
 def main():
     buttons = ['/check']
-    markup = ReplyKeyboardMarkup.from_column(buttons)
     updater = Updater(token=TG_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', greeting))
     updater.dispatcher.add_handler(CommandHandler('proceed', start))
