@@ -47,7 +47,7 @@ def input_num(update, context):
         num_fact = ''.join([URL, guess, '?json'])
         guess = int(guess[0])
         StatInfo.player_num = guess
-        if guess >= StatInfo.lower or guess <= StatInfo.upper:
+        if StatInfo.player_num >= StatInfo.lower and StatInfo.player_num <= StatInfo.upper:
             context.bot.send_message(
                 chat_id=chat.id,
                 text='Oh, nice. Here is an interesting fact about numbers:'
@@ -74,10 +74,15 @@ def input_num(update, context):
             return StatInfo.player_num
         else:
             message = f'Дружок, число от {StatInfo.lower} до {StatInfo.upper}'
-            context.bot.send_message(chat_id=chat.id, text=message)
+            context.bot.send_message(chat_id=chat.id,
+                                     text=message,
+                                     reply_markup=PROCEED)
+
     except ValueError:
         message = 'Дружок, введи целое положительное число: '
-        context.bot.send_message(chat_id=chat.id, text=message)
+        context.bot.send_message(chat_id=chat.id,
+                                 text=message,
+                                 reply_markup=PROCEED)
 
 
 def start(update, context):
@@ -85,7 +90,7 @@ def start(update, context):
     context.bot.send_message(
         chat_id=chat.id,
         text=("You've got only one try.\n Good luck!\n"
-              f'Enter the num between {StatInfo.lower} and {StatInfo.upper}:- ')
+              f'Enter the num between {StatInfo.lower} and {StatInfo.upper}: ')
     )
     return context
 
