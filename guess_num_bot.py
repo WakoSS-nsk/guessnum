@@ -47,8 +47,8 @@ def input_num(update, context):
         num_fact = ''.join([URL, guess, '?json'])
         guess = int(guess[0])
         StatInfo.player_num = guess
-        if (StatInfo.player_num >= StatInfo.lower) and (
-                StatInfo.player_num <= StatInfo.upper):
+        if (guess >= StatInfo.lower) and (
+                guess <= StatInfo.upper):
             context.bot.send_message(
                 chat_id=chat.id,
                 text='Oh, nice. Here is an interesting fact about numbers:'
@@ -72,7 +72,7 @@ def input_num(update, context):
                 text=response['text'],
                 reply_markup=button
             )
-            return StatInfo.player_num
+            return guess
         else:
             message = f'Дружок, число от {StatInfo.lower} до {StatInfo.upper}'
             context.bot.send_message(chat_id=chat.id,
