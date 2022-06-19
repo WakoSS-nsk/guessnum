@@ -73,10 +73,11 @@ def input_num(update, context):
             )
             return StatInfo.player_num
         else:
-            raise InputError(
-                f'Дружок, введи число от {StatInfo.lower} до {StatInfo.upper}')
+            message = f'Дружок, число от {StatInfo.lower} до {StatInfo.upper}'
+            context.bot.send_message(chat_id=chat.id, text=message)
     except ValueError:
-        raise ValueError('Дружок, введи целое положительное число: ')
+        message = 'Дружок, введи целое положительное число: '
+        context.bot.send_message(chat_id=chat.id, text=message)
 
 
 def start(update, context):
