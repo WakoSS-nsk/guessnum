@@ -18,6 +18,7 @@ UPPER = 10
 LEVEL = LOWER
 X_NUM = random.randint(LOWER, UPPER)
 GUESS_QUANTITY = round(math.log(UPPER - LOWER + 1, 2))
+PLAYER_NUM = 0
 
 
 def greeting(update, context):
@@ -35,11 +36,12 @@ def greeting(update, context):
 
 def input_num(update, context):
     chat = update.effective_chat
-    print(update.message)
+    button = ReplyKeyboardMarkup([['/next_step']], resize_keyboard=True)
     try:
         guess = update.message['text']
         num_fact = ''.join([URL, guess, '?json'])
         guess = int(guess[0])
+        PLAYER_NUM = guess
         if guess >= LOWER or guess <= UPPER:
             context.bot.send_message(
                 chat_id=chat.id,
@@ -55,12 +57,16 @@ def input_num(update, context):
                 text_1 = new_url['contents']['answer']
                 context.bot.send_message(
                     chat_id=chat.id,
-                    text=f'Here is the converted number to base 2 -{text_1}')
+                    text=f'Here is the converted number to base 2 -{text_1}',
+                    reply_markup=button
+                )
+
             context.bot.send_message(
                 chat_id=chat.id,
                 text=response['text'],
                 reply_markup=button
             )
+            return PLAYER_NUM
         else:
             raise InputError('Дружок, введи число от {LOWER} до {UPPER}')
     except ValueError:
@@ -69,12 +75,10 @@ def input_num(update, context):
 
 def start(update, context):
     chat = update.effective_chat
-    button = ReplyKeyboardMarkup([['check']], resize_keyboard=True)
     context.bot.send_message(
         chat_id=chat.id,
         text=(f'Количество попыток: {GUESS_QUANTITY}. Удачи!'
-              f'Введи число от {LOWER} до {UPPER}:- и нажми check'),
-        reply_markup=button
+              f'Введи число от {LOWER} до {UPPER}:- ')
     )
     return context
 
@@ -84,28 +88,35 @@ def start_game(update, context):
     tries_count = 0
     while tries_count < GUESS_QUANTITY:
         tries_count += 1
-        user_num = input_num()
+        user_num = PLAYER_NUM
         if X_NUM == user_num:
-            print(f'Молодец! C {tries_count} попыток')
+            context.bot.send_message(
+                chat_id=chat.id,
+                text=f'Молодец! C {tries_count} попыток')
             break
         elif X_NUM > user_num:
-            print('Не угадал! Моё число больше.')
+            context.bot.send_message(
+                chat_id=chat.id,
+                text='Не угадал! Моё число больше.')
         elif X_NUM < user_num:
-            print('Не угадал! Моё число меньше.')
+            context.bot.send_message(
+                chat_id=chat.id,
+                text='Не угадал! Моё число меньше.')
     if tries_count >= GUESS_QUANTITY:
-        print(f'Я загадал {X_NUM}')
-        print('Повезет в другой раз!')
+        context.bot.send_message(
+            chat_id=chat.id,
+            text=f'Я загадал {X_NUM}\n. Повезет в другой раз!')
 
 
 def main():
-    buttons = ['check', 'next_step']
+    buttons = ['check', '/next_step']
     markup = ReplyKeyboardMarkup.from_column(buttons)
     updater = Updater(token=TG_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', greeting))
     updater.dispatcher.add_handler(CommandHandler('proceed', start))
     updater.start_polling()
     updater.dispatcher.add_handler(
-        MessageHandler(Filters.text(buttons[0]), input_num))
+        MessageHandler(Filters.text & (~ Filters.command), input_num))
     updater.start_polling()
     updater.dispatcher.add_handler(
         MessageHandler(Filters.text(buttons[1]), start_game))
