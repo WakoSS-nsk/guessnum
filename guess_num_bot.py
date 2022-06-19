@@ -20,25 +20,6 @@ X_NUM = random.randint(LOWER, UPPER)
 GUESS_QUANTITY = round(math.log(UPPER - LOWER + 1, 2))
 
 
-def get_new_image():
-    response = get_url()
-    return response[0]
-
-
-def get_url():
-    response = requests.get(URL)
-    response = response.json()
-    random_pic = response[0].get('hdurl')
-    description = response[0].get('explanation')
-    list_objects = [random_pic, description]
-    return list_objects
-
-
-def new_pic(update, context):
-    chat = update.effective_chat
-    context.bot.send_photo(chat.id, get_new_image())
-
-
 def greeting(update, context):
     chat = update.effective_chat
     name = update.message.chat.first_name
@@ -54,6 +35,7 @@ def greeting(update, context):
 
 def input_num(update, context):
     chat = update.effective_chat
+    print(update.message)
     try:
         guess = update.message['text']
         num_fact = ''.join([URL, guess, '?json'])
@@ -73,23 +55,26 @@ def input_num(update, context):
                 text_1 = new_url['contents']['answer']
                 context.bot.send_message(
                     chat_id=chat.id,
-                    text=(f'Here is the converted number to base 2 -{text}'))
+                    text=f'Here is the converted number to base 2 -{text_1}')
             context.bot.send_message(
-                chat_id=chat.id, text=response['text'])
-            return guess
-        raise InputError(
-            f'Дружок, введи число от {LOWER} до {UPPER}'
-        )
+                chat_id=chat.id,
+                text=response['text'],
+                reply_markup=button
+            )
+        else:
+            raise InputError('Дружок, введи число от {LOWER} до {UPPER}')
     except ValueError:
         raise ValueError('Дружок, введи целое положительное число: ')
-    return guess
 
 
 def start(update, context):
     chat = update.effective_chat
+    button = ReplyKeyboardMarkup([['check']], resize_keyboard=True)
     context.bot.send_message(
-        chat_id=chat.id, text=f'Угадай число от {LOWER} до {UPPER}:- '
-                              f'Количество попыток: {GUESS_QUANTITY}. Удачи!'
+        chat_id=chat.id,
+        text=(f'Количество попыток: {GUESS_QUANTITY}. Удачи!'
+              f'Введи число от {LOWER} до {UPPER}:- и нажми check'),
+        reply_markup=button
     )
     return context
 
@@ -113,13 +98,17 @@ def start_game(update, context):
 
 
 def main():
+    buttons = ['check', 'next_step']
+    markup = ReplyKeyboardMarkup.from_column(buttons)
     updater = Updater(token=TG_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', greeting))
     updater.dispatcher.add_handler(CommandHandler('proceed', start))
     updater.start_polling()
-    updater.dispatcher.add_handler(MessageHandler(Filters.text, input_num))
+    updater.dispatcher.add_handler(
+        MessageHandler(Filters.text(buttons[0]), input_num))
     updater.start_polling()
-    updater.dispatcher.add_handler(MessageHandler(Filters.text, input_num))
+    updater.dispatcher.add_handler(
+        MessageHandler(Filters.text(buttons[1]), start_game))
     updater.idle()
 
 
