@@ -1,14 +1,13 @@
 import random
+from dataclasses import dataclass
 
 from telegram import InlineKeyboardMarkup
 from telegram.ext import (CommandHandler, CallbackQueryHandler, Filters,
                           MessageHandler, Updater)
 
-from dataclasses import dataclass
-
+from adds.api_call import get_num, get_api_answer, spare_api
 from adds.consts import (PROCEED, CHECK, START, ZERO, ONE, TWO, FIFTEEN,
                          KEYBOARD_REPLY, TG_TOKEN)
-from adds.api_call import get_num, get_api_answer, spare_api
 
 
 @dataclass
