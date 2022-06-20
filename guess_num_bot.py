@@ -1,20 +1,11 @@
-import os
 import random
 
-
-import requests
-from dotenv import load_dotenv
-from telegram import ReplyKeyboardMarkup
+from telegram import InlineKeyboardMarkup
 from telegram.ext import (CommandHandler, Filters,
                           MessageHandler, Updater)
 
-load_dotenv()
-
-START = ReplyKeyboardMarkup([['/start']], resize_keyboard=True)
-PROCEED = ReplyKeyboardMarkup([['/proceed']], resize_keyboard=True)
-TG_TOKEN = os.getenv('TOKEN')
-URL = 'http://numbersapi.com/'
-SECOND_URL = 'https://api.math.tools/numbers/base?number='
+import consts
+from api_call import get_num, get_api_answer, spare_api
 
 
 class StatInfo:
@@ -28,7 +19,7 @@ class StatInfo:
 def greeting(update, context):
     chat = update.effective_chat
     name = update.message.chat.first_name
-    button = PROCEED
+    button = consts.PROCEED
     context.bot.send_message(
         chat_id=chat.id,
         text=(f'Hi, {name}.\n'
@@ -41,12 +32,9 @@ def greeting(update, context):
 
 def input_num(update, context):
     chat = update.effective_chat
-    button = ReplyKeyboardMarkup([['/check']], resize_keyboard=True)
+    guess = update.message['text']
     try:
-        guess = update.message['text']
-        num_fact = ''.join([URL, guess, '?json'])
-        guess = int(guess[0])
-        StatInfo.player_num = guess
+        guess = get_num(guess)
         if (guess >= StatInfo.lower) and (
                 guess <= StatInfo.upper):
             context.bot.send_message(
@@ -54,36 +42,43 @@ def input_num(update, context):
                 text='Oh, nice. Here is an interesting fact about numbers:'
             )
             try:
-                response = requests.get(num_fact).json()
-            except ConnectionError:
-                raise ConnectionError('API недоступен')
-                param = '8&from=10&to=2'
-                new_url = ''.join([SECOND_URL, guess, param])
-                response = requests.get(new_url).json()
-                text_1 = new_url['contents']['answer']
+                response = get_api_answer(consts.COMPLETE_URL)
                 context.bot.send_message(
                     chat_id=chat.id,
-                    text=f'Here is the converted number to base 2 -{text_1}',
-                    reply_markup=button
+                    text=response['text']
                 )
 
+            except ConnectionError:
+                context.bot.send_message(
+                    chat_id=chat.id,
+                    text=('Here is the converted number to base 2'
+                          f' -{spare_api(consts.COMPLETE_URL_2)}'),
+                    reply_markup=consts.CHECK
+                )
+            #context.bot.send_message(
+             #   chat_id=chat.id,
+              #  text=response['text']
+           # )
             context.bot.send_message(
                 chat_id=chat.id,
-                text=response['text'],
-                reply_markup=button
+                text=("Pal, are you ready to check, "
+                      "if you have guessed correctly or not?"
+                      "Choose '/check' or '/give up' "),
+                reply_markup=InlineKeyboardMarkup(consts.KEYBOARD_REPLY)
             )
             return guess
         else:
-            message = f'Дружок, число от {StatInfo.lower} до {StatInfo.upper}'
+            message = ('Hey pal, enter the number between '
+                       f'{StatInfo.lower} and {StatInfo.upper}')
             context.bot.send_message(chat_id=chat.id,
                                      text=message,
-                                     reply_markup=PROCEED)
+                                     reply_markup=consts.PROCEED)
 
     except ValueError:
-        message = 'Дружок, введи целое положительное число: '
+        message = 'Pal, the number is to be positive integer! '
         context.bot.send_message(chat_id=chat.id,
                                  text=message,
-                                 reply_markup=PROCEED)
+                                 reply_markup=consts.PROCEED)
 
 
 def start(update, context):
@@ -103,35 +98,31 @@ def start_game(update, context):
         StatInfo.game_level += 1
         StatInfo.lower += 1
         StatInfo.upper += 2
-        button = START
         context.bot.send_message(
             chat_id=chat.id,
             text=(f'Well done! Your level is increased! Are you a psychic?\n'
                   'One more time?'),
-            reply_markup=button
+            reply_markup=consts.START
         )
 
     elif StatInfo.x_num > user_num:
-        button = PROCEED
         context.bot.send_message(
             chat_id=chat.id,
             text=('Wrong! My num is greater.\n'
                   f'My number is  {StatInfo.x_num}.\n One more time?'),
-            reply_markup=button
+            reply_markup=consts.PROCEED
         )
     elif StatInfo.x_num < user_num:
-        button = PROCEED
         context.bot.send_message(
             chat_id=chat.id,
             text=('Wrong! My num is less\n'
                   f'My number is  {StatInfo.x_num}.\n One more time?'),
-            reply_markup=button
+            reply_markup=consts.PROCEED
         )
 
 
 def main():
-    buttons = ['/check']
-    updater = Updater(token=TG_TOKEN)
+    updater = Updater(token=consts.TG_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', greeting))
     updater.dispatcher.add_handler(CommandHandler('proceed', start))
     updater.start_polling()
@@ -139,7 +130,7 @@ def main():
         MessageHandler(Filters.text & (~ Filters.command), input_num))
     updater.start_polling()
     updater.dispatcher.add_handler(
-        MessageHandler(Filters.text(buttons[0]), start_game))
+        MessageHandler(Filters.text('/check'), start_game))
     updater.idle()
 
 
