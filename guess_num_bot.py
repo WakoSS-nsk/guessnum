@@ -1,4 +1,6 @@
 import random
+import logging
+import sys
 from dataclasses import dataclass
 
 from telegram import InlineKeyboardMarkup
@@ -12,6 +14,7 @@ from adds.consts import (PROCEED, CHECK, START, ZERO, ONE, TWO, FIFTEEN,
 
 @dataclass
 class StatInfo:
+    """Содержит базовые параметры для игры и информацию о прогрессе. """
     lower = 0
     upper = 3
     reputation = 0
@@ -22,6 +25,7 @@ class StatInfo:
 
 
 def greeting(update, context):
+    """Приветственное сообщение и картинка."""
     chat = update.effective_chat
     name = update.message.chat.first_name
     context.bot.send_message(
@@ -35,6 +39,9 @@ def greeting(update, context):
 
 
 def input_num(update, context):
+    """Получение ответа пользователя и предоставление интересного факта
+     об этом числе, либо его записи в двоичной системе.
+     """
     chat = update.effective_chat
     guess = update.message['text']
     StatInfo.player_num = guess
@@ -55,6 +62,7 @@ def input_num(update, context):
             )
 
         except ConnectionError:
+            logger.error('Сервер недоступен')
             context.bot.send_message(
                 chat_id=chat.id,
                 text=('Here is the converted number to base 2'
@@ -78,6 +86,7 @@ def input_num(update, context):
 
 
 def start(update, context):
+    """Информирует о начале игры и начальных условиях."""
     chat = update.effective_chat
     context.bot.send_message(
         chat_id=chat.id,
@@ -88,6 +97,7 @@ def start(update, context):
 
 
 def start_game(update, context):
+    """Проверяет угадал пользователь число или нет."""
     chat = update.effective_chat
     x_num = random.randint(StatInfo.lower, StatInfo.upper)
     if x_num == StatInfo.player_num:
@@ -122,6 +132,7 @@ def start_game(update, context):
 
 
 def endgame(update, context):
+    """Информирует пользователя о достижениях."""
     chat = update.effective_chat
     context.bot.send_message(
         chat_id=chat.id,
@@ -134,7 +145,17 @@ def endgame(update, context):
     context.bot.send_photo(chat.id, photo=open('pics/saw_2.png', 'rb'))
 
 
+def check_tokens():
+    """Проверяет доступность токена."""
+    return TG_TOKEN
+
+
 def main():
+    """Основная логика работы бота."""
+    check_tokens()
+    if check_tokens() is not True:
+        logger.critical('Отсутсвует токен')
+        sys.exit('Отсутсвует токен')
     updater = Updater(token=TG_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', greeting))
     updater.dispatcher.add_handler(CommandHandler('proceed', start))
@@ -150,4 +171,12 @@ def main():
 
 
 if __name__ == '__main__':
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s, %(levelname)s,%(lineno)d, %(funcName)s,'
+               '%(pathname)s, %(message)s',
+        handlers=[logging.FileHandler('main.log', encoding='UTF-8'),
+                  logging.StreamHandler(sys.stdout)]
+    )
     main()
