@@ -12,9 +12,11 @@ CHECK = ReplyKeyboardMarkup([['/check']], resize_keyboard=True)
 TG_TOKEN = os.getenv('TOKEN')
 URL = 'http://numbersapi.com/'
 SECOND_URL = 'https://api.math.tools/numbers/base?number='
-KEYBOARD_REPLY = [[InlineKeyboardButton("/check", callback_data='HElist8'),
-                   InlineKeyboardButton("/give up", callback_data='HRlist8')]]
+KEYBOARD_REPLY = [[InlineKeyboardButton("/check", callback_data='/check'),
+                   InlineKeyboardButton("/give up", callback_data='/give_up')]]
 
-COMPLETE_URL = ''
-COMPLETE_URL_2 = ''
+ZERO = 0
+ONE = 1
+TWO = 2
+FIFTEEN = 15
 URL_2_PARAM = '8&from=10&to=2'
