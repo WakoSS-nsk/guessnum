@@ -13,3 +13,4 @@
 # ФОТО
 ![Лого](pics/logo.jpeg)
 ![Интересный факт о числах](pics/chat.jpg)
+![Достижения](pics/stats.jpg)
