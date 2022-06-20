@@ -11,5 +11,5 @@
 # Технологии
 Использован python-telegram-bot
 # ФОТО
-![Лого](https://drive.google.com/file/d/1adD6YL6F4XvVLgIb23vist455Ldi8T_-/view?usp=sharing)
-![Интересный факт о числах](https://drive.google.com/file/d/1huaF372OInYZ8q9avErTfIWxof5tCuJm/view?usp=sharing)
+![Лого](pics/logo.jpeg)
+![Интересный факт о числах](pics/chat.jpg)
