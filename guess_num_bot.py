@@ -9,7 +9,7 @@ from telegram.ext import (CommandHandler, CallbackQueryHandler, Filters,
 
 from adds.api_call import get_num, get_api_answer, spare_api
 from adds.consts import (PROCEED, CHECK, START, ZERO, ONE, TWO, FIFTEEN,
-                         KEYBOARD_REPLY, TG_TOKEN)
+                         KEYBOARD_REPLY, KEYBOARD_STATS, TG_TOKEN)
 
 
 @dataclass
@@ -109,7 +109,7 @@ def start_game(update, context):
             chat_id=chat.id,
             text=('Well done!\n Your level is increased!\n'
                   'You gained reputation!'
-                  f'Your reputation is {StatInfo.reputation}'
+                  f'Your reputation is {StatInfo.reputation}\n'
                   'Are you a psychic?\n'
                   'One more time?'),
             reply_markup=START
@@ -132,30 +132,35 @@ def start_game(update, context):
 
 
 def endgame(update, context):
+    """Информирует пользователя о завершении игры."""
+    chat = update.effective_chat
+    context.bot.send_message(
+        chat_id=chat.id,
+        text=('It was a nice game!\n'
+              f'You gained {StatInfo.reputation} reputation\n'
+              "Take a look how well you do!\n"
+              "I'll be waiting for a new round."),
+        reply_markup=InlineKeyboardMarkup(KEYBOARD_STATS)
+    )
+    context.bot.send_photo(chat.id, photo=open('pics/saw_2.png', 'rb'))
+
+
+def stats(update, context):
     """Информирует пользователя о достижениях."""
     chat = update.effective_chat
     context.bot.send_message(
         chat_id=chat.id,
-        text=(f'It was a nice game!\n Your level is {StatInfo.game_level}\n'
+        text=(f'Hey genius!\nYour level is {StatInfo.game_level}\n'
               f'You gained {StatInfo.reputation} reputation\n'
-              "Next time just send me '/start'.\n I'll be waiting."),
+              "It's time to check your intuition.\n"
+              "Press '/start', Pal!\n "),
         reply_markup=START
     )
-
-    context.bot.send_photo(chat.id, photo=open('pics/saw_2.png', 'rb'))
-
-
-def check_tokens():
-    """Проверяет доступность токена."""
-    return TG_TOKEN
+    context.bot.send_photo(chat.id, photo=open('pics/uncle_sawm.png', 'rb'))
 
 
 def main():
     """Основная логика работы бота."""
-    check_tokens()
-    if check_tokens() is not True:
-        logger.critical('Отсутсвует токен')
-        sys.exit('Отсутсвует токен')
     updater = Updater(token=TG_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', greeting))
     updater.dispatcher.add_handler(CommandHandler('proceed', start))
@@ -167,6 +172,8 @@ def main():
         start_game, pattern='/check'))
     updater.dispatcher.add_handler(CallbackQueryHandler(
         endgame, pattern='/give_up'))
+    updater.dispatcher.add_handler(CallbackQueryHandler(
+        stats, pattern='/my_stats'))
     updater.idle()
 
 

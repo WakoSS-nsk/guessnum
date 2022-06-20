@@ -14,6 +14,7 @@ URL = 'http://numbersapi.com/'
 SECOND_URL = 'https://api.math.tools/numbers/base?number='
 KEYBOARD_REPLY = [[InlineKeyboardButton("/check", callback_data='/check'),
                    InlineKeyboardButton("/give up", callback_data='/give_up')]]
+KEYBOARD_STATS = [[InlineKeyboardButton("/my_stats", callback_data='/my_stats')]]
 
 ZERO = 0
 ONE = 1
